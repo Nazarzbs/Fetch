@@ -38,12 +38,12 @@ struct PostListView: View {
             }
         }
         .navigationTitle("Feeds")
-        .navigationDestination(for: Post.self) { post in
-            PostDetailView(post: post)
-        }
-        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search posts")
+        .searchable(text: $viewModel.searchText, prompt: "Search posts")
         .onChange(of: viewModel.searchText) { _, _ in
             viewModel.updateUIState()
+        }
+        .navigationDestination(for: Post.self) { post in
+            PostDetailView(post: post)
         }
     }
     
@@ -70,7 +70,7 @@ struct PostListView: View {
                 .listRowSeparator(.hidden)
             }
         }
-        .listStyle(.insetGrouped) // Provides a much cleaner "card-like" look
+        .listStyle(.insetGrouped)
         .refreshable { await viewModel.fetchPosts() }
     }
 }
