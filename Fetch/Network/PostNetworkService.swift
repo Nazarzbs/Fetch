@@ -27,7 +27,7 @@ enum PostNetworkError: LocalizedError {
     }
 }
 
-final class PostNetworkService {
+final class PostNetworkService: Sendable {
 
     private let session: URLSession
     private let baseURLString = "https://jsonplaceholder.typicode.com"
@@ -37,13 +37,22 @@ final class PostNetworkService {
     }
 
     func fetchPosts() async throws -> [Post] {
-        let url = try makePostsURL()
+        try await fetchPosts(page: 1, limit: 20)
+    }
+
+    func fetchPosts(page: Int, limit: Int) async throws -> [Post] {
+        let url = try makePostsURL(page: page, limit: limit)
         let data = try await performRequest(url: url)
         return try decodePosts(data: data)
     }
 
-    private func makePostsURL() throws -> URL {
-        guard let url = URL(string: "\(baseURLString)/posts") else {
+    private func makePostsURL(page: Int = 1, limit: Int = 20) throws -> URL {
+        var components = URLComponents(string: "\(baseURLString)/posts")
+        components?.queryItems = [
+            URLQueryItem(name: "_page", value: "\(page)"),
+            URLQueryItem(name: "_limit", value: "\(limit)")
+        ]
+        guard let url = components?.url else {
             throw PostNetworkError.invalidURL
         }
         return url
@@ -56,11 +65,7 @@ final class PostNetworkService {
                   (200...299).contains(httpResponse.statusCode) else {
                 throw PostNetworkError.invalidResponse
             }
-            
-            print(data)
             return data
-            
-           
         } catch {
             throw PostNetworkError.requestFailed(underlying: error)
         }
