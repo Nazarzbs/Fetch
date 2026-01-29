@@ -17,18 +17,21 @@ enum DataState {
 @Observable
 @MainActor
 final class PostListViewModel {
-    // Single Source of Truth for the UI
+
     private(set) var state: DataState = .loading
     
-    // Pagination helpers (kept private as the View doesn't need to see them)
     private(set) var isLoadingMore = false
     private var posts: [Post] = []
     private var currentPage = 1
     private var hasMoreData = true
     private let pageSize = 10
-    private let loadMoreThreshold = 3 // Adjusted for smoother scrolling
+    private let loadMoreThreshold = 3
 
     private let networkService: PostNetworkService
+    private let cacheService: PostCacheService?
+
+    private(set) var isShowingCachedData = false
+
     var searchText = ""
 
     var filteredPosts: [Post] {
@@ -36,27 +39,38 @@ final class PostListViewModel {
         return posts.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }
 
-    init(networkService: PostNetworkService = PostNetworkService()) {
+    init(networkService: PostNetworkService = PostNetworkService(), cacheService: PostCacheService? = nil) {
         self.networkService = networkService
+        self.cacheService = cacheService
     }
 
     func fetchPosts() async {
-        // Prevent showing loading screen if we already have data (e.g., on pull-to-refresh)
         if posts.isEmpty { state = .loading }
-        
+        isShowingCachedData = false
+
         do {
             let firstPage = try await networkService.fetchPosts(page: 1, limit: pageSize)
             self.posts = firstPage
             self.currentPage = 1
             self.hasMoreData = firstPage.count >= pageSize
+            try? cacheService?.savePosts(firstPage)
             updateUIState()
         } catch {
-            state = .error(error.localizedDescription)
+            let cached = cacheService?.loadPosts() ?? []
+            if !cached.isEmpty {
+                self.posts = cached
+                self.currentPage = 1
+                self.hasMoreData = false
+                isShowingCachedData = true
+                updateUIState()
+            } else {
+                state = .error(error.localizedDescription)
+            }
         }
     }
 
     func loadMoreIfNeeded(currentItem: Post) {
-        // Don't paginate if searching, already loading, or no more data
+      
         guard searchText.isEmpty, hasMoreData, !isLoadingMore else { return }
         if case .loading = state { return }
         
@@ -81,16 +95,15 @@ final class PostListViewModel {
                 posts.append(contentsOf: newItems)
                 currentPage = nextPage
                 hasMoreData = newItems.count >= pageSize
+                try? cacheService?.savePosts(newItems)
             }
             updateUIState()
         } catch {
-            // We don't switch the whole view to .error here because
-            // we don't want to hide the posts we already loaded.
+          
             print("Pagination error: \(error.localizedDescription)")
         }
     }
 
-    // This method handles the logic for Search vs List vs Empty
     func updateUIState() {
         state = .success(filteredPosts)
     }
