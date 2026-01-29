@@ -22,9 +22,11 @@ struct ContentView: View {
                     } description: {
                         Text(message)
                     }
+                } else if !viewModel.searchText.isEmpty && viewModel.filteredPosts.isEmpty {
+                    ContentUnavailableView.search(text: viewModel.searchText)
                 } else {
                     List {
-                        ForEach(viewModel.posts) { post in
+                        ForEach(viewModel.filteredPosts) { post in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(post.title)
                                     .font(.headline)
@@ -52,6 +54,7 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Posts")
+            .searchable(text: $viewModel.searchText, prompt: "Search by title")
             .task {
                 await viewModel.fetchPosts()
             }

@@ -21,11 +21,19 @@ final class PostListViewModel {
 
     private var currentPage = 0
     private(set) var hasMoreData = true
-    private let pageSize = 20
+    private let pageSize = 10
     private let loadMoreThreshold = 5
 
     var searchText = ""
-    var filteredPosts: [Post] = []
+
+    var filteredPosts: [Post] {
+        if searchText.isEmpty {
+            return posts
+        }
+        return posts.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     init(networkService: PostNetworkService = PostNetworkService()) {
         self.networkService = networkService
@@ -41,7 +49,6 @@ final class PostListViewModel {
             posts = firstPage
             currentPage = 1
             hasMoreData = firstPage.count >= pageSize
-            filterPosts()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -71,19 +78,8 @@ final class PostListViewModel {
             posts.append(contentsOf: newItems)
             currentPage = nextPage
             hasMoreData = newItems.count >= pageSize
-            filterPosts()
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func filterPosts() {
-        if searchText.isEmpty {
-            filteredPosts = posts
-        } else {
-            filteredPosts = posts.filter {
-                $0.title.localizedCaseInsensitiveContains(searchText)
-            }
         }
     }
 }
