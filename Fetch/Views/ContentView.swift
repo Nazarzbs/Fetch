@@ -16,6 +16,17 @@ struct ContentView: View {
             Text("Hello, world!")
         }
         .padding()
+        .task {
+            let service = PostNetworkService()
+            do {
+                let posts = try await service.fetchPosts()
+                print(posts)
+            } catch let error as PostNetworkError {
+               
+            } catch {
+               
+            }
+        }
     }
 }
 
