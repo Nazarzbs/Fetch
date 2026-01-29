@@ -12,20 +12,31 @@ struct PostDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(post.title)
-                    .font(.title2)
-                    .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 12) {
+                
+                    Text(post.title)
+                        .font(.system(.title, design: .rounded, weight: .bold))
+                        .lineSpacing(4)
+                }
+                .padding(.horizontal)
 
-                Text(post.body)
-                    .font(.body)
-                    .foregroundStyle(.primary)
+                Divider()
+                    .padding(.horizontal)
+
+                VStack(alignment: .leading, spacing: 20) {
+                   
+                    Text(post.body)
+                        .font(.system(.body, design: .serif))
+                        .lineSpacing(8)
+                        .foregroundStyle(.secondary)
+                    
+                }
+                .padding(.horizontal)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
+            .padding(.vertical)
         }
-        .navigationTitle("Post")
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-

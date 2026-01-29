@@ -14,28 +14,34 @@ struct PostListView: View {
         Group {
             switch viewModel.state {
             case .loading:
-                ProgressView("Fetching posts...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.blue)
+            
             case .error(let message):
                 ContentUnavailableView {
-                    Label("Connection Error", systemImage: "wifi.exclamationmark")
+                    Label("Connection Error", systemImage: "wifi.router.fill")
                 } description: {
                     Text(message)
                 } actions: {
-                    Button("Try Again") {
-                        Task { await viewModel.fetchPosts() }
-                    }
+                    Button("Try Again", action: { Task { await viewModel.fetchPosts() } })
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                 }
                 
             case .success(let displayedPosts):
-                postsList(displayedPosts)
+                if displayedPosts.isEmpty {
+                    ContentUnavailableView.search(text: viewModel.searchText)
+                } else {
+                    postsList(displayedPosts)
+                }
             }
         }
+        .navigationTitle("Feeds")
         .navigationDestination(for: Post.self) { post in
             PostDetailView(post: post)
         }
-        .searchable(text: $viewModel.searchText, prompt: "Search title")
+        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search posts")
         .onChange(of: viewModel.searchText) { _, _ in
             viewModel.updateUIState()
         }
@@ -48,6 +54,7 @@ struct PostListView: View {
                 NavigationLink(value: post) {
                     PostRow(post: post)
                 }
+                .listRowBackground(Color(.secondarySystemGroupedBackground))
                 .onAppear {
                     viewModel.loadMoreIfNeeded(currentItem: post)
                 }
@@ -59,10 +66,11 @@ struct PostListView: View {
                     ProgressView()
                     Spacer()
                 }
+                .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }
         }
-        .listStyle(.plain)
+        .listStyle(.insetGrouped) // Provides a much cleaner "card-like" look
         .refreshable { await viewModel.fetchPosts() }
     }
 }
